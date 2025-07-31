@@ -1,13 +1,19 @@
-import { ScreenContent } from 'components/ScreenContent';
-import { StatusBar } from 'expo-status-bar';
+import React from 'react';
+import { Provider } from 'react-redux';
+import { store } from 'src/store';
+import { GlobalProvider } from 'src/context/GlobalContext';
+import { AppNavigator } from 'src/navigation/AppNavigator';
 
 import './global.css';
 
-export default function App() {
+const App: React.FC = () => {
   return (
-    <>
-      <ScreenContent title="Home" path="App.tsx"></ScreenContent>
-      <StatusBar style="auto" />
-    </>
+    <Provider store={store}>
+      <GlobalProvider>
+        <AppNavigator />
+      </GlobalProvider>
+    </Provider>
   );
-}
+};
+
+export default App;
