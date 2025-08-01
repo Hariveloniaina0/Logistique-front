@@ -9,13 +9,13 @@
         "src/*"
       ],
       "@env": [
-        "app-env.d.ts"
+        "nativewind-env.d.ts"
       ]
     }
   },
   "include": [
     "src/**/*",
-    "app-env.d.ts",
+    "nativewind-env.d.ts",
     "nativewind-env.d.ts"
   ]
 }

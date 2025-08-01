@@ -1,8 +1,7 @@
-// src/store/slices/authSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, LoginRequest, User } from '../../types';
 import { authService } from '../../services/auth.service';
-import { storeToken, removeStoredToken, storeUserData, removeUserData, getStoredToken, getStoredUserData } from '../../utils/storage';
+import { storeToken, removeStoredToken, storeUserData, removeUserData, getStoredToken, getStoredUserData, storeRefreshToken, removeStoredRefreshToken } from '../../utils/storage';
 
 const initialState: AuthState = {
   user: null,
@@ -12,7 +11,6 @@ const initialState: AuthState = {
   error: null,
 };
 
-// Async thunks
 export const loginUser = createAsyncThunk<
   { accessToken: string; user: User },
   LoginRequest,
@@ -21,6 +19,7 @@ export const loginUser = createAsyncThunk<
   try {
     const response = await authService.login(credentials);
     await storeToken(response.access_token);
+    await storeRefreshToken(response.refresh_token);
     const profileResponse = await authService.getProfile();
     await storeUserData(profileResponse.user);
     return {
@@ -40,34 +39,67 @@ export const logoutUser = createAsyncThunk<
   try {
     await authService.logout();
     await removeStoredToken();
+    await removeStoredRefreshToken();
     await removeUserData();
   } catch (error: any) {
     await removeStoredToken();
+    await removeStoredRefreshToken();
     await removeUserData();
     return rejectWithValue(error.response?.data?.message || 'Logout failed');
   }
 });
 
 export const refreshToken = createAsyncThunk<
-  { accessToken: string; user: User },
+  { accessToken: string; refreshToken: string; user: User },
   void,
   { rejectValue: string }
 >('auth/refresh', async (_, { rejectWithValue }) => {
   try {
+    console.log('Starting token refresh process...');
     const response = await authService.refreshToken();
-    const profileResponse = await authService.getProfile();
-    await storeToken(response.access_token);
-    await storeUserData(profileResponse.user);
+    console.log('Token refresh response received');
+
+    await storeToken(response.accessToken);
+    await storeRefreshToken(response.refreshToken);
+    await storeUserData(response.user);
+
+    console.log('Token refresh completed successfully');
     return {
-      accessToken: response.access_token,
-      user: profileResponse.user,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      user: response.user,
     };
   } catch (error: any) {
-    await removeStoredToken();
-    await removeUserData();
-    return rejectWithValue(error.response?.data?.message || 'Token refresh failed');
+    console.error('Token refresh error:', error);
+
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+      console.error('Error status:', error.response.status);
+    }
+
+    const message = error.response?.data?.message || error.message || 'Token refresh failed';
+
+    if (message.includes('User not found or inactive') ||
+      error.response?.status === 401 ||
+      error.response?.status === 403) {
+      console.log('User inactive or unauthorized, clearing stored data');
+      await removeStoredToken();
+      await removeStoredRefreshToken();
+      await removeUserData();
+      return rejectWithValue('Votre compte est désactivé. Veuillez contacter l\'administrateur.');
+    }
+
+    if (error.response?.status >= 400) {
+      console.log('Auth error, clearing stored data');
+      await removeStoredToken();
+      await removeStoredRefreshToken();
+      await removeUserData();
+    }
+
+    return rejectWithValue(message);
   }
 });
+
 
 export const loadStoredAuth = createAsyncThunk<
   { accessToken: string; user: User } | null,
@@ -109,7 +141,6 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -126,7 +157,6 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.isAuthenticated = false;
       })
-      // Logout
       .addCase(logoutUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -145,7 +175,6 @@ const authSlice = createSlice({
         state.accessToken = null;
         state.isAuthenticated = false;
       })
-      // Refresh token
       .addCase(refreshToken.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -164,7 +193,6 @@ const authSlice = createSlice({
         state.accessToken = null;
         state.isAuthenticated = false;
       })
-      // Load stored auth
       .addCase(loadStoredAuth.pending, (state) => {
         state.isLoading = true;
         state.error = null;

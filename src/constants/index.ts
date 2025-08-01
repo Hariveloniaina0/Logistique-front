@@ -1,3 +1,4 @@
+//src\constants\index.ts
 export * from './colors';
 
 export const APP_CONFIG = {
@@ -9,6 +10,7 @@ export const APP_CONFIG = {
 
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: '@access_token',
+  REFRESH_TOKEN: '@refresh_token',
   USER_DATA: '@user_data',
   THEME_PREFERENCE: '@theme_preference',
-} as const;
+} as const; 

@@ -1,9 +1,7 @@
-// src/utils/storage.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants';
 import { User } from '../types';
 
-// Token management
 export const storeToken = async (token: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
@@ -31,7 +29,33 @@ export const removeStoredToken = async (): Promise<void> => {
   }
 };
 
-// User data management
+export const storeRefreshToken = async (token: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
+  } catch (error) {
+    console.error('Error storing refresh token:', error);
+    throw error;
+  }
+};
+
+export const getStoredRefreshToken = async (): Promise<string | null> => {
+  try {
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    return token;
+  } catch (error) {
+    console.error('Error getting stored refresh token:', error);
+    return null;
+  }
+};
+
+export const removeStoredRefreshToken = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+  } catch (error) {
+    console.error('Error removing refresh token:', error);
+  }
+};
+
 export const storeUserData = async (user: User): Promise<void> => {
   try {
     const userData = JSON.stringify(user);
@@ -63,7 +87,6 @@ export const removeUserData = async (): Promise<void> => {
   }
 };
 
-// Generic storage functions
 export const storeData = async (key: string, value: any): Promise<void> => {
   try {
     const jsonValue = JSON.stringify(value);
@@ -99,4 +122,3 @@ export const clearAllData = async (): Promise<void> => {
     console.error('Error clearing all data:', error);
   }
 };
-
