@@ -1,3 +1,4 @@
+// src/services/api.ts
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { API_BASE_URL } from '@env';
 import { APP_CONFIG, STORAGE_KEYS } from '../constants';
@@ -71,7 +72,6 @@ class ApiService {
         
         if (error.response?.status === 401 && !originalRequest._retry) {
           if (this.isRefreshing) {
-            // Si on est déjà en train de refresh, attendre
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
             }).then(token => {
@@ -116,14 +116,17 @@ class ApiService {
     );
   }
 
-  // Méthodes HTTP restent identiques...
   async get<T>(url: string, params?: any): Promise<T> {
     const response = await this.instance.get(url, { params });
     return response.data;
   }
 
   async post<T>(url: string, data?: any): Promise<T> {
-    const response = await this.instance.post(url, data);
+    const response = await this.instance.post(url, data, {
+      headers: {
+        'Content-Type': data instanceof FormData ? 'multipart/form-data' : 'application/json',
+      },
+    });
     return response.data;
   }
 

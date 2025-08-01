@@ -1,13 +1,20 @@
+// src/screens/main/HomeScreen.tsx
 import React from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text, Alert, FlatList } from 'react-native';
 import { Layout } from '../../components/common/Layout';
 import { Button } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../constants/colors';
 import { UserRole } from '../../types';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MainStackParamList } from '../../navigation/MainNavigator';
+
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
 export const HomeScreen: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
 
   const handleLogout = () => {
     Alert.alert(
@@ -58,9 +65,28 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
+  const menuItems = [
+    { title: 'Étiquettes', screen: 'Etiquette' as keyof MainStackParamList, variant: 'primary' },
+    { title: 'Commandes', screen: 'Commande' as keyof MainStackParamList, variant: 'secondary' },
+    { title: 'Démarques', screen: 'Demarque' as keyof MainStackParamList, variant: 'outline' },
+    { title: 'Produits', screen: 'Produit' as keyof MainStackParamList, variant: 'primary' },
+    { title: 'Inventaire', screen: 'Inventaire' as keyof MainStackParamList, variant: 'secondary' },
+    { title: 'Réception', screen: 'Reception' as keyof MainStackParamList, variant: 'outline' },
+  ];
+
+  const renderMenuItem = ({ item }: { item: { title: string; screen: keyof MainStackParamList; variant: 'primary' | 'secondary' | 'outline' } }) => (
+    <View className="w-1/2 p-2">
+      <Button
+        title={item.title}
+        variant={item.variant}
+        onPress={() => navigation.navigate(item.screen)}
+      />
+    </View>
+  );
+
   return (
     <Layout>
-      <View className="flex-1 justify-center items-center">
+      <View className="flex-1 justify-between px-6 py-4">
         {/* Welcome Section */}
         <View className="items-center mb-8">
           <View 
@@ -130,31 +156,37 @@ export const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Actions Section */}
-        <View className="w-full max-w-sm">
+        {/* Menu Grid */}
+        <View className="flex-1">
           <Text className="text-lg font-semibold mb-4 text-center" style={{ color: colors.text }}>
             Actions rapides
           </Text>
-          
-          <View className="space-y-3">
-            <Button
-              title="Voir le profil"
-              variant="primary"
-              onPress={() => Alert.alert('Info', 'Fonctionnalité à venir')}
-            />
-            
-            <Button
-              title="Paramètres"
-              variant="outline"
-              onPress={() => Alert.alert('Info', 'Fonctionnalité à venir')}
-            />
-            
-            <Button
-              title="Déconnexion"
-              variant="danger"
-              onPress={handleLogout}
-            />
-          </View>
+          <FlatList
+            data={menuItems}
+            renderItem={renderMenuItem}
+            keyExtractor={(item) => item.screen}
+            numColumns={2}
+            columnWrapperStyle={{ justifyContent: 'space-between' }}
+          />
+        </View>
+
+        {/* Import Button */}
+        <View className="mt-4">
+          <Button
+            title="Importer des nouvelles données"
+            variant="primary"
+            size="large"
+            onPress={() => navigation.navigate('Import')}
+          />
+        </View>
+
+        {/* Logout Button */}
+        <View className="mt-4">
+          <Button
+            title="Déconnexion"
+            variant="danger"
+            onPress={handleLogout}
+          />
         </View>
       </View>
     </Layout>
