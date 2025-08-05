@@ -1,12 +1,21 @@
 // src/services/api.ts
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { API_BASE_URL } from '@env';
-import { APP_CONFIG, STORAGE_KEYS } from '../constants';
-import { getStoredToken, removeStoredToken, getStoredRefreshToken, removeStoredRefreshToken, removeUserData, storeRefreshToken, storeToken } from '../utils/storage';
+import { APP_CONFIG } from '../constants';
+import { 
+  getStoredToken, 
+  removeStoredToken, 
+  getStoredRefreshToken, 
+  removeStoredRefreshToken, 
+  removeUserData, 
+  storeRefreshToken, 
+  storeToken 
+} from '../utils/storage';
 
 class ApiService {
   private instance: AxiosInstance;
   private isRefreshing = false;
+  private refreshPromise: Promise<string> | null = null;
   private failedQueue: Array<{
     resolve: (value?: any) => void;
     reject: (error?: any) => void;
@@ -36,7 +45,59 @@ class ApiService {
     this.failedQueue = [];
   }
 
+  private async performTokenRefresh(): Promise<string> {
+    console.log('Performing token refresh...');
+    
+    const refreshToken = await getStoredRefreshToken();
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    try {
+      // Faire la requête de refresh avec le refresh token dans le header
+      const response = await this.instance.get('/auth/refresh', {
+        headers: {
+          'x-refresh-token': refreshToken
+        }
+      });
+      
+      const newToken = response.data.access_token;
+      const newRefreshToken = response.data.refresh_token;
+      
+      if (!newToken) {
+        throw new Error('No access token in refresh response');
+      }
+      
+      // Sauvegarder les nouveaux tokens
+      await storeToken(newToken);
+      if (newRefreshToken) {
+        await storeRefreshToken(newRefreshToken);
+      }
+      
+      console.log('Token refresh successful in API service');
+      return newToken;
+      
+    } catch (error: any) {
+      console.error('Token refresh failed in API service:', error);
+      
+      // Si c'est une 401, le refresh token est invalide
+      if (error.response?.status === 401) {
+        await this.clearAuthData();
+        throw new Error('Authentication failed');
+      }
+      
+      throw error;
+    }
+  }
+
+  private async clearAuthData() {
+    await removeStoredToken();
+    await removeStoredRefreshToken();
+    await removeUserData();
+  }
+
   private setupInterceptors() {
+    // Request interceptor
     this.instance.interceptors.request.use(
       async (config) => {
         const token = await getStoredToken();
@@ -44,12 +105,22 @@ class ApiService {
         
         console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
         
+        // Pour les requêtes normales, utiliser le Bearer token
         if (token && config.url !== '/auth/refresh') {
           config.headers.Authorization = `Bearer ${token}`;
         }
         
+        // Pour le refresh, utiliser le refresh token dans le header x-refresh-token
         if (refreshToken && config.url === '/auth/refresh') {
           config.headers['x-refresh-token'] = refreshToken;
+          // Ne pas inclure le Bearer token pour le refresh
+          delete config.headers.Authorization;
+        }
+
+        // Pour les requêtes multipart/form-data, laisser axios gérer le Content-Type
+        if (config.data instanceof FormData) {
+          delete config.headers['Content-Type'];
+          console.log('FormData detected, letting axios handle Content-Type');
         }
         
         return config;
@@ -60,6 +131,7 @@ class ApiService {
       }
     );
 
+    // Response interceptor
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => {
         console.log(`Response ${response.status} for ${response.config.url}`);
@@ -68,47 +140,74 @@ class ApiService {
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
         
-        console.error(`Response error ${error.response?.status} for ${originalRequest?.url}`);
+        console.error(`Response error ${error.response?.status} for ${originalRequest?.url}`, error.response?.data);
         
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          if (this.isRefreshing) {
-            return new Promise((resolve, reject) => {
-              this.failedQueue.push({ resolve, reject });
-            }).then(token => {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-              return this.instance(originalRequest);
-            }).catch(err => {
-              return Promise.reject(err);
-            });
-          }
-
+        // Gérer les erreurs 401 (token expiré) - mais seulement pour les requêtes non-refresh
+        if (error.response?.status === 401 && 
+            !originalRequest._retry && 
+            originalRequest?.url !== '/auth/refresh') {
+          
           originalRequest._retry = true;
-          this.isRefreshing = true;
 
-          try {
-            console.log('Attempting token refresh due to 401...');
-            const response = await this.instance.get('/auth/refresh');
-            const newToken = response.data.access_token;
-            
-            await storeToken(newToken);
-            if (response.data.refresh_token) {
-              await storeRefreshToken(response.data.refresh_token);
+          // Si un refresh est déjà en cours, attendre qu'il se termine
+          if (this.isRefreshing && this.refreshPromise) {
+            try {
+              const newToken = await this.refreshPromise;
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return this.instance(originalRequest);
+            } catch (refreshError) {
+              return Promise.reject(refreshError);
             }
-            
-            this.processQueue(null, newToken);
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return this.instance(originalRequest);
-            
-          } catch (refreshError) {
-            console.error('Token refresh failed in interceptor:', refreshError);
-            this.processQueue(refreshError, null);
-            await removeStoredToken();
-            await removeStoredRefreshToken();
-            await removeUserData();
-            return Promise.reject(refreshError);
-          } finally {
-            this.isRefreshing = false;
           }
+
+          // Si aucun refresh en cours, en démarrer un
+          if (!this.isRefreshing) {
+            this.isRefreshing = true;
+            
+            this.refreshPromise = this.performTokenRefresh()
+              .then((newToken) => {
+                this.processQueue(null, newToken);
+                return newToken;
+              })
+              .catch((refreshError) => {
+                this.processQueue(refreshError, null);
+                throw refreshError;
+              })
+              .finally(() => {
+                this.isRefreshing = false;
+                this.refreshPromise = null;
+              });
+
+            try {
+              const newToken = await this.refreshPromise;
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return this.instance(originalRequest);
+            } catch (refreshError) {
+              return Promise.reject(refreshError);
+            }
+          }
+
+          // Si un refresh est en cours, mettre en queue
+          return new Promise((resolve, reject) => {
+            this.failedQueue.push({ 
+              resolve: (token) => {
+                if (token) {
+                  originalRequest.headers.Authorization = `Bearer ${token}`;
+                  resolve(this.instance(originalRequest));
+                } else {
+                  reject(error);
+                }
+              }, 
+              reject 
+            });
+          });
+        }
+        
+        // Pour les erreurs de refresh token (401 sur /auth/refresh)
+        if (error.response?.status === 401 && originalRequest?.url === '/auth/refresh') {
+          console.log('Refresh token is invalid, clearing auth data');
+          await this.clearAuthData();
+          return Promise.reject(new Error('Authentication failed'));
         }
         
         return Promise.reject(error);
@@ -122,11 +221,24 @@ class ApiService {
   }
 
   async post<T>(url: string, data?: any): Promise<T> {
-    const response = await this.instance.post(url, data, {
-      headers: {
-        'Content-Type': data instanceof FormData ? 'multipart/form-data' : 'application/json',
-      },
-    });
+    let config: any = {};
+
+    if (data instanceof FormData) {
+      config.headers = {
+        'Content-Type': 'multipart/form-data',
+      };
+      console.log('Sending FormData request to:', url);
+      
+      if (__DEV__ || process.env.NODE_ENV === 'development') {
+        try {
+          console.log('Sending FormData with keys (entries not available in RN)');
+        } catch (error) {
+          console.log('FormData logging skipped');
+        }
+      }
+    }
+
+    const response = await this.instance.post(url, data, config);
     return response.data;
   }
 

@@ -2,8 +2,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/main/HomeScreen';
-import { ImportScreen } from '../screens/main/ImportScreen'; // New screen
+import { ImportScreen } from '../screens/main/ImportScreen';
 import { colors } from '../constants/colors';
+import { View, Text } from 'react-native';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -45,7 +46,6 @@ export const MainNavigator: React.FC = () => {
           title: 'Importer des données',
         }}
       />
-      {/* Placeholder screens - implement these as needed */}
       <Stack.Screen 
         name="Etiquette" 
         component={PlaceholderScreen}
