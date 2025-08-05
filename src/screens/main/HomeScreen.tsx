@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, FlatList, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Layout } from '../../components/common/Layout';
 import { Button } from '../../components/ui';
@@ -17,6 +17,53 @@ export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const slideAnim = useState(new Animated.Value(-Dimensions.get('window').width * 0.75))[0];
+
+
+  const toggleMenu = () => {
+    const toValue = isMenuOpen ? -Dimensions.get('window').width * 0.75 : 0;
+
+    Animated.timing(slideAnim, {
+      toValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    setIsMenuOpen(!isMenuOpen);
+  };
+  
+  // Configuration du header avec le burger menu
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={toggleMenu}
+          className="p-2 rounded-lg mr-2"
+          style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+        >
+          <Menu width={24} height={24} stroke={colors.white} />
+        </TouchableOpacity>
+      ),
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={toggleMenu}
+          className="w-8 h-8 rounded-full items-center justify-center"
+          style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+        >
+          <Text className="text-white font-bold text-sm">
+            {user?.userName?.charAt(0)?.toUpperCase() || 'U'}
+          </Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, user, toggleMenu]);
+
+  // Fermer le menu lors du changement de navigation
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      closeMenu();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -81,24 +128,37 @@ export const HomeScreen: React.FC = () => {
       { title: 'Réception', screen: 'Reception', variant: 'outline', icon: '🚚' },
     ];
 
-  const toggleMenu = () => {
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -Dimensions.get('window').width * 0.75 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-    setIsMenuOpen(!isMenuOpen);
+
+
+  const closeMenu = () => {
+    if (isMenuOpen) {
+      Animated.timing(slideAnim, {
+        toValue: -Dimensions.get('window').width * 0.75,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      setIsMenuOpen(false);
+    }
   };
 
-  const renderMenuItem = ({ item }: { item: { title: string; screen: keyof MainStackParamList; variant: 'primary' | 'secondary' | 'outline'; icon: string } }) => (
+  const renderMenuItem = ({ item }: {
+    item: {
+      title: string;
+      screen: keyof MainStackParamList;
+      variant: 'primary' | 'secondary' | 'outline';
+      icon: string
+    }
+  }) => (
     <View className="w-1/2 p-2">
       <Button
         title={item.title}
         variant={item.variant}
         size="medium"
         onPress={() => {
-          navigation.navigate(item.screen);
-          toggleMenu();
+          closeMenu(); // Fermer le menu d'abord
+          setTimeout(() => {
+            navigation.navigate(item.screen);
+          }, 50); // Petit délai pour éviter les conflits
         }}
         style={{
           shadowColor: colors.textMuted,
@@ -106,6 +166,7 @@ export const HomeScreen: React.FC = () => {
           shadowOpacity: 0.2,
           shadowRadius: 4,
           elevation: 3,
+          minHeight: 60,
         }}
       >
         <Text className="mr-2 text-lg">{item.icon}</Text>
@@ -114,22 +175,23 @@ export const HomeScreen: React.FC = () => {
   );
 
   return (
-    <Layout safeArea={true}>
+    <Layout safeArea={false} padding={false}>
       <View className="flex-1">
-        {/* Header with Burger Menu Button */}
-        <View className="flex-row justify-between items-center p-4 bg-white border-b" style={{ borderColor: colors.neutral }}>
-          <Text className="text-xl font-bold" style={{ color: colors.text }}>
-            Store Manager
+
+        {/* Message de bienvenue plus compact */}
+        <View className="px-6 py-4 bg-white">
+          <Text className="text-lg font-semibold mb-1" style={{ color: colors.text }}>
+            Bonjour, {user?.userName}! 👋
           </Text>
-          <TouchableOpacity onPress={toggleMenu}>
-            <Menu width={24} height={24} stroke={colors.primary} />
-          </TouchableOpacity>
+          <Text className="text-sm" style={{ color: colors.textLight }}>
+            Que souhaitez-vous faire aujourd'hui ?
+          </Text>
         </View>
 
-        {/* Main Content */}
-        <View className="flex-1 justify-between px-6 py-4">
+        {/* Main Content avec meilleur espacement */}
+        <View className="flex-1 px-6 py-4" style={{ backgroundColor: colors.background }}>
           <View className="flex-1">
-            <Text className="text-lg font-semibold mb-4 text-center" style={{ color: colors.text }}>
+            <Text className="text-base font-medium mb-4" style={{ color: colors.text }}>
               Actions rapides
             </Text>
             <FlatList
@@ -139,22 +201,29 @@ export const HomeScreen: React.FC = () => {
               numColumns={2}
               columnWrapperStyle={{ justifyContent: 'space-between' }}
               contentContainerStyle={{ paddingBottom: 20 }}
+              showsVerticalScrollIndicator={false}
             />
           </View>
 
-          {/* Import Button */}
+          {/* Import Button avec design amélioré */}
           <View className="mt-4">
             <Button
-              title="Importer des nouvelles données"
+              title="Importer de nouvelles données"
               variant="primary"
               size="large"
-              onPress={() => navigation.navigate('Import')}
+              onPress={() => {
+                closeMenu();
+                setTimeout(() => {
+                  navigation.navigate('Import');
+                }, 50);
+              }}
               style={{
-                shadowColor: colors.textMuted,
-                shadowOffset: { width: 0, height: 2 },
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.2,
-                shadowRadius: 4,
-                elevation: 3,
+                shadowRadius: 6,
+                elevation: 4,
+                borderRadius: 12,
               }}
             >
               <Text className="mr-2 text-lg">📤</Text>
@@ -162,110 +231,173 @@ export const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Slide-out Menu */}
-        <Animated.View
-          className="absolute top-0 bottom-0 w-3/4 bg-white shadow-lg"
-          style={{
-            transform: [{ translateX: slideAnim }],
-            borderRightWidth: 1,
-            borderRightColor: colors.neutral,
-          }}
-        >
-          <View className="flex-1 p-4">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-xl font-bold" style={{ color: colors.text }}>
-                Profil
-              </Text>
-              <TouchableOpacity onPress={toggleMenu}>
-                <X width={24} height={24} stroke={colors.primary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Welcome Section */}
-            <View className="items-center mb-8">
+        {/* Slide-out Menu amélioré */}
+        {isMenuOpen && (
+          <Animated.View
+            className="absolute top-0 bottom-0 w-3/4 bg-white z-50"
+            style={{
+              left: 0,
+              transform: [{ translateX: slideAnim }],
+              shadowColor: colors.textMuted,
+              shadowOffset: { width: 2, height: 0 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+              elevation: 10,
+            }}
+          >
+            <View className="flex-1">
+              {/* Header du menu */}
               <View
-                className="w-20 h-20 rounded-full items-center justify-center mb-4"
-                style={{ backgroundColor: colors.primary }}
+                className="flex-row justify-between items-center px-4 py-3 border-b"
+                style={{
+                  borderColor: colors.neutral,
+                  backgroundColor: colors.primary,
+                }}
               >
-                <Text className="text-2xl font-bold" style={{ color: colors.white }}>
-                  {user?.userName?.charAt(0)?.toUpperCase() || 'U'}
+                <Text className="text-xl font-bold text-white">
+                  Profil
                 </Text>
+                <TouchableOpacity
+                  onPress={closeMenu}
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                >
+                  <X width={24} height={24} stroke={colors.white} />
+                </TouchableOpacity>
               </View>
 
-              <Text className="text-2xl font-bold mb-2" style={{ color: colors.text }}>
-                Bonjour, {user?.userName}! 👋
-              </Text>
+              <View className="flex-1 p-4">
+                {/* Section utilisateur */}
+                <View className="items-center mb-6">
+                  <View
+                    className="w-20 h-20 rounded-full items-center justify-center mb-3"
+                    style={{ backgroundColor: colors.primary }}
+                  >
+                    <Text className="text-2xl font-bold text-white">
+                      {user?.userName?.charAt(0)?.toUpperCase() || 'U'}
+                    </Text>
+                  </View>
 
-              <Text className="text-base text-center mb-4" style={{ color: colors.textLight }}>
-                Bienvenue dans votre espace Store Manager
-              </Text>
-
-              {/* User Info Card */}
-              <View
-                className="bg-white rounded-lg p-4 w-full max-w-sm shadow-sm border"
-                style={{ borderColor: colors.neutral }}
-              >
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-sm" style={{ color: colors.textMuted }}>
-                    Email:
+                  <Text className="text-xl font-bold mb-1" style={{ color: colors.text }}>
+                    {user?.userName}
                   </Text>
-                  <Text className="text-sm font-medium" style={{ color: colors.text }}>
+
+                  <Text className="text-sm text-center mb-4" style={{ color: colors.textLight }}>
                     {user?.emailAddress}
                   </Text>
-                </View>
 
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-sm" style={{ color: colors.textMuted }}>
-                    Rôle:
-                  </Text>
+                  {/* Carte d'informations utilisateur améliorée */}
                   <View
-                    className="px-2 py-1 rounded-full"
-                    style={{ backgroundColor: `${user?.userRole ? getRoleColor(user.userRole) : colors.neutral}20` }}
+                    className="bg-white rounded-xl p-4 w-full shadow-sm border"
+                    style={{
+                      borderColor: colors.neutral,
+                      backgroundColor: colors.surface,
+                    }}
                   >
-                    <Text
-                      className="text-xs font-semibold"
-                      style={{ color: user?.userRole ? getRoleColor(user.userRole) : colors.neutral }}
-                    >
-                      {user?.userRole ? getRoleDisplayName(user.userRole) : 'Inconnu'}
-                    </Text>
+                    <View className="flex-row justify-between items-center mb-3">
+                      <Text className="text-sm font-medium" style={{ color: colors.textMuted }}>
+                        Rôle
+                      </Text>
+                      <View
+                        className="px-3 py-1 rounded-full"
+                        style={{ backgroundColor: `${user?.userRole ? getRoleColor(user.userRole) : colors.neutral}20` }}
+                      >
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: user?.userRole ? getRoleColor(user.userRole) : colors.neutral }}
+                        >
+                          {user?.userRole ? getRoleDisplayName(user.userRole) : 'Inconnu'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-sm font-medium" style={{ color: colors.textMuted }}>
+                        Statut
+                      </Text>
+                      <View
+                        className="px-3 py-1 rounded-full"
+                        style={{ backgroundColor: `${colors.success}20` }}
+                      >
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: colors.success }}
+                        >
+                          🟢 Actif
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
 
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-sm" style={{ color: colors.textMuted }}>
-                    Statut:
+                {/* Actions du menu */}
+                <View className="mb-6">
+                  <Text className="text-base font-semibold mb-3" style={{ color: colors.text }}>
+                    Actions rapides
                   </Text>
-                  <View
-                    className="px-2 py-1 rounded-full"
-                    style={{ backgroundColor: `${colors.success}20` }}
+
+                  <TouchableOpacity
+                    className="flex-row items-center p-3 rounded-lg mb-2"
+                    style={{ backgroundColor: `${colors.primary}10` }}
+                    onPress={() => {
+                      closeMenu();
+                      setTimeout(() => {
+                        navigation.navigate('Import');
+                      }, 50);
+                    }}
                   >
-                    <Text
-                      className="text-xs font-semibold"
-                      style={{ color: colors.success }}
-                    >
-                      Actif
+                    <Text className="mr-3 text-lg">⚙️</Text>
+                    <Text className="text-base" style={{ color: colors.text }}>
+                      Paramètres
                     </Text>
-                  </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="flex-row items-center p-3 rounded-lg mb-2"
+                    style={{ backgroundColor: `${colors.info}10` }}
+                    onPress={() => {
+                      Alert.alert('À propos', 'Store Manager v1.0.0');
+                    }}
+                  >
+                    <Text className="mr-3 text-lg">ℹ️</Text>
+                    <Text className="text-base" style={{ color: colors.text }}>
+                      À propos
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Bouton de déconnexion */}
+                <View className="mt-auto">
+                  <Button
+                    title="Déconnexion"
+                    variant="danger"
+                    onPress={() => {
+                      closeMenu();
+                      setTimeout(() => {
+                        handleLogout();
+                      }, 300);
+                    }}
+                    style={{
+                      borderRadius: 12,
+                      shadowColor: colors.error,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    }}
+                  />
                 </View>
               </View>
             </View>
+          </Animated.View>
+        )}
 
-            {/* Logout Button */}
-            <Button
-              title="Déconnexion"
-              variant="danger"
-              onPress={handleLogout}
-              style={{ marginTop: 16 }}
-            />
-          </View>
-        </Animated.View>
-
-        {/* Overlay when menu is open */}
+        {/* Overlay amélioré */}
         {isMenuOpen && (
           <TouchableOpacity
-            className="absolute top-0 bottom-0 left-0 right-0"
-            style={{ backgroundColor: colors.overlay }}
-            onPress={toggleMenu}
+            className="absolute top-0 bottom-0 left-0 right-0 z-40"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+            onPress={closeMenu}
             activeOpacity={1}
           />
         )}
