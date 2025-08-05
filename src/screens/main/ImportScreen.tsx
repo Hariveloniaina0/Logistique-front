@@ -1,4 +1,3 @@
-// src/screens/main/ImportScreen.tsx
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -71,7 +70,6 @@ export const ImportScreen: React.FC = () => {
         await extractHeaders(selectedFile);
         setCurrentStep(2);
       }
-
     } catch (err) {
       console.error('Document pick error:', err);
       setError("Erreur lors de la sélection du fichier");
@@ -93,10 +91,9 @@ export const ImportScreen: React.FC = () => {
       const autoMappings: FieldMapping = {};
       response.headers.forEach(header => {
         const normalizedHeader = header.toLowerCase().trim();
-
         if (normalizedHeader.includes('code') && normalizedHeader.includes('produit')) {
           autoMappings[header] = 'productCode';
-        } else if (normalizedHeader.includes('barr') || normalizedHeader.includes('ean')) {
+        } else if (normalizedHeader.includes('barcode') || normalizedHeader.includes('ean') || normalizedHeader.includes('barr')) {
           autoMappings[header] = 'barcodeValue';
         } else if (normalizedHeader.includes('nom') && normalizedHeader.includes('produit')) {
           autoMappings[header] = 'productName';
@@ -117,11 +114,22 @@ export const ImportScreen: React.FC = () => {
 
       setMappings(autoMappings);
       console.log('Auto-mappings applied:', autoMappings);
-
-    } catch (err) {
-      console.error('Header extraction error:', err);
-      setError("Erreur lors de l'extraction des en-têtes");
-      Alert.alert('Erreur', 'Impossible d\'extraire les en-têtes du fichier');
+    } catch (err: any) {
+      console.error('Header extraction error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+      });
+      let errorMessage = 'Impossible d\'extraire les en-têtes du fichier';
+      if (err.response?.status === 401) {
+        errorMessage = 'Erreur d\'authentification. Veuillez vous reconnecter.';
+      } else if (err.response?.status === 400) {
+        errorMessage = err.response.data.message || 'Fichier invalide ou mal formaté.';
+      } else if (err.message.includes('Failed to extract headers')) {
+        errorMessage = 'Erreur lors de l\'extraction des en-têtes. Vérifiez le format du fichier.';
+      }
+      setError(errorMessage);
+      Alert.alert('Erreur', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -172,13 +180,12 @@ export const ImportScreen: React.FC = () => {
 
       Alert.alert(
         'Import réussi! 🎉',
-        `${result.importedCount} produits ont été importés avec succès.`,
+        `${result.importedCount} produits ont été importés avec succès.${result.skippedCount ? ` ${result.skippedCount} lignes ignorées.` : ''}`,
         [
           { text: 'Nouvel import', onPress: resetImport },
           { text: 'OK', style: 'default' }
         ]
       );
-
     } catch (err: any) {
       console.error('Import error:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de l\'importation';
@@ -337,6 +344,11 @@ export const ImportScreen: React.FC = () => {
           <Text style={{ color: colors.text }}>
             {importResult.importedCount} produits importés
           </Text>
+          {importResult.skippedCount ? (
+            <Text style={{ color: colors.text }}>
+              {importResult.skippedCount} lignes ignorées
+            </Text>
+          ) : null}
           {importResult.errors && importResult.errors.length > 0 && (
             <View className="mt-2">
               <Text className="font-medium" style={{ color: colors.warning }}>

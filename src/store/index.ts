@@ -9,7 +9,7 @@ import { RootState, AuthState } from './types';
 const persistConfig: PersistConfig<AuthState> = {
   key: 'auth',
   storage: AsyncStorage,
-  whitelist: ['user', 'accessToken', 'isAuthenticated'], 
+  whitelist: ['user', 'accessToken', 'isAuthenticated','refreshToken'],
 };
 
 const persistedReducer = persistReducer(persistConfig, authReducer);

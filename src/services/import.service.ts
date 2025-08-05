@@ -1,5 +1,6 @@
 // src/services/import.service.ts
 import { apiService } from './api';
+import * as DocumentPicker from 'expo-document-picker';
 
 export interface ImportHeaders {
   headers: string[];
@@ -13,34 +14,38 @@ export interface ImportResult {
 }
 
 export interface FieldMapping {
-  [fileHeader: string]: string; // fileHeader -> mappedField
+  [fileHeader: string]: string;
 }
 
 class ImportService {
-  async extractHeaders(file: File | any): Promise<ImportHeaders> {
+  
+  async extractHeaders(file: DocumentPicker.DocumentPickerAsset): Promise<ImportHeaders> {
+    console.log('Extracting headers for file:', {
+      name: file.name,
+      uri: file.uri,
+      mimeType: file.mimeType,
+      size: file.size,
+    });
     const formData = new FormData();
-    
-    // Pour React Native, utiliser le format attendu
-    if (file.uri) {
-      formData.append('file', {
-        uri: file.uri,
-        name: file.name,
-        type: file.mimeType || 'application/octet-stream',
-      } as any);
-    } else {
-      // Pour Web
-      formData.append('file', file);
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.mimeType || 'text/csv',
+    } as any);
+    console.log('FormData prepared for /import/headers');
+    try {
+      const response = await apiService.post<ImportHeaders>('/import/headers', formData);
+      console.log('Headers received from backend:', response.headers);
+      return response;
+    } catch (error) {
+      console.error('Header extraction error:', error);
+      throw new Error('Failed to extract headers from server');
     }
-
-    console.log('Extracting headers for file:', file.name);
-    const response = await apiService.post<ImportHeaders>('/import/headers', formData);
-    console.log('Headers extracted:', response.headers);
-    return response;
   }
 
   async importProducts(file: File | any, mappings: FieldMapping): Promise<ImportResult> {
     const formData = new FormData();
-    
+
     // Ajouter le fichier
     if (file.uri) {
       formData.append('file', {
@@ -66,7 +71,7 @@ class ImportService {
     const errors: string[] = [];
     const requiredFields = ['productCode', 'barcodeValue', 'productName'];
     const mappedValues = Object.values(mappings).filter(value => value !== '');
-    
+
     // Vérifier que les champs obligatoires sont mappés
     for (const field of requiredFields) {
       if (!mappedValues.includes(field)) {
@@ -75,10 +80,10 @@ class ImportService {
     }
 
     // Vérifier qu'il n'y a pas de doublons dans les mappings
-    const duplicates = mappedValues.filter((value, index) => 
+    const duplicates = mappedValues.filter((value, index) =>
       mappedValues.indexOf(value) !== index && value !== ''
     );
-    
+
     if (duplicates.length > 0) {
       errors.push(`Les champs suivants sont mappés plusieurs fois: ${duplicates.join(', ')}`);
     }

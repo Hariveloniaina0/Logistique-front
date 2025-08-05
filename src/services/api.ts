@@ -2,15 +2,16 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { API_BASE_URL } from '@env';
 import { APP_CONFIG } from '../constants';
-import { 
-  getStoredToken, 
-  removeStoredToken, 
-  getStoredRefreshToken, 
-  removeStoredRefreshToken, 
-  removeUserData, 
-  storeRefreshToken, 
-  storeToken 
+import {
+  getStoredToken,
+  removeStoredToken,
+  getStoredRefreshToken,
+  removeStoredRefreshToken,
+  removeUserData,
+  storeRefreshToken,
+  storeToken
 } from '../utils/storage';
+import { Platform } from 'react-native';
 
 class ApiService {
   private instance: AxiosInstance;
@@ -41,13 +42,13 @@ class ApiService {
         resolve(token);
       }
     });
-    
+
     this.failedQueue = [];
   }
 
   private async performTokenRefresh(): Promise<string> {
     console.log('Performing token refresh...');
-    
+
     const refreshToken = await getStoredRefreshToken();
     if (!refreshToken) {
       throw new Error('No refresh token available');
@@ -60,32 +61,32 @@ class ApiService {
           'x-refresh-token': refreshToken
         }
       });
-      
+
       const newToken = response.data.access_token;
       const newRefreshToken = response.data.refresh_token;
-      
+
       if (!newToken) {
         throw new Error('No access token in refresh response');
       }
-      
+
       // Sauvegarder les nouveaux tokens
       await storeToken(newToken);
       if (newRefreshToken) {
         await storeRefreshToken(newRefreshToken);
       }
-      
+
       console.log('Token refresh successful in API service');
       return newToken;
-      
+
     } catch (error: any) {
       console.error('Token refresh failed in API service:', error);
-      
+
       // Si c'est une 401, le refresh token est invalide
       if (error.response?.status === 401) {
         await this.clearAuthData();
         throw new Error('Authentication failed');
       }
-      
+
       throw error;
     }
   }
@@ -102,14 +103,14 @@ class ApiService {
       async (config) => {
         const token = await getStoredToken();
         const refreshToken = await getStoredRefreshToken();
-        
+
         console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
-        
+
         // Pour les requêtes normales, utiliser le Bearer token
         if (token && config.url !== '/auth/refresh') {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
+
         // Pour le refresh, utiliser le refresh token dans le header x-refresh-token
         if (refreshToken && config.url === '/auth/refresh') {
           config.headers['x-refresh-token'] = refreshToken;
@@ -117,12 +118,16 @@ class ApiService {
           delete config.headers.Authorization;
         }
 
-        // Pour les requêtes multipart/form-data, laisser axios gérer le Content-Type
         if (config.data instanceof FormData) {
           delete config.headers['Content-Type'];
-          console.log('FormData detected, letting axios handle Content-Type');
+
+          // Ajout pour React Native
+          if (Platform.OS !== 'web') {
+            config.headers['Content-Type'] = 'multipart/form-data';
+            config.transformRequest = (data) => data;
+          }
         }
-        
+
         return config;
       },
       (error) => {
@@ -139,14 +144,14 @@ class ApiService {
       },
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
-        
+
         console.error(`Response error ${error.response?.status} for ${originalRequest?.url}`, error.response?.data);
-        
+
         // Gérer les erreurs 401 (token expiré) - mais seulement pour les requêtes non-refresh
-        if (error.response?.status === 401 && 
-            !originalRequest._retry && 
-            originalRequest?.url !== '/auth/refresh') {
-          
+        if (error.response?.status === 401 &&
+          !originalRequest._retry &&
+          originalRequest?.url !== '/auth/refresh') {
+
           originalRequest._retry = true;
 
           // Si un refresh est déjà en cours, attendre qu'il se termine
@@ -163,7 +168,7 @@ class ApiService {
           // Si aucun refresh en cours, en démarrer un
           if (!this.isRefreshing) {
             this.isRefreshing = true;
-            
+
             this.refreshPromise = this.performTokenRefresh()
               .then((newToken) => {
                 this.processQueue(null, newToken);
@@ -187,9 +192,8 @@ class ApiService {
             }
           }
 
-          // Si un refresh est en cours, mettre en queue
           return new Promise((resolve, reject) => {
-            this.failedQueue.push({ 
+            this.failedQueue.push({
               resolve: (token) => {
                 if (token) {
                   originalRequest.headers.Authorization = `Bearer ${token}`;
@@ -197,19 +201,18 @@ class ApiService {
                 } else {
                   reject(error);
                 }
-              }, 
-              reject 
+              },
+              reject
             });
           });
         }
-        
-        // Pour les erreurs de refresh token (401 sur /auth/refresh)
+
         if (error.response?.status === 401 && originalRequest?.url === '/auth/refresh') {
           console.log('Refresh token is invalid, clearing auth data');
           await this.clearAuthData();
           return Promise.reject(new Error('Authentication failed'));
         }
-        
+
         return Promise.reject(error);
       }
     );
@@ -221,24 +224,11 @@ class ApiService {
   }
 
   async post<T>(url: string, data?: any): Promise<T> {
-    let config: any = {};
-
-    if (data instanceof FormData) {
-      config.headers = {
-        'Content-Type': 'multipart/form-data',
-      };
-      console.log('Sending FormData request to:', url);
-      
-      if (__DEV__ || process.env.NODE_ENV === 'development') {
-        try {
-          console.log('Sending FormData with keys (entries not available in RN)');
-        } catch (error) {
-          console.log('FormData logging skipped');
-        }
-      }
+    console.log(`Sending POST request to: ${url}`);
+    if (__DEV__ && data instanceof FormData) {
+      console.log('FormData content is not logged in React Native for performance reasons.');
     }
-
-    const response = await this.instance.post(url, data, config);
+    const response = await this.instance.post(url, data);
     return response.data;
   }
 

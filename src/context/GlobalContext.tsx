@@ -4,6 +4,7 @@ import { loadStoredAuth, refreshToken, clearAuth } from '../store/slices/authSli
 import { APP_CONFIG } from '../constants';
 import { User } from '../types';
 import { Alert } from 'react-native';
+import { getStoredRefreshToken, getStoredToken, removeStoredRefreshToken, removeStoredToken, removeUserData } from '~/utils';
 
 interface GlobalContextType {
   isAuthenticated: boolean;
@@ -34,17 +35,29 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
   const MAX_REFRESH_ATTEMPTS = 3;
   const MIN_REFRESH_INTERVAL = 30000; // 30 secondes minimum entre les refresh
 
-  const initializeApp = useCallback(async () => {
-    try {
-      const result = await dispatch(loadStoredAuth()).unwrap();
-      if (result && result.accessToken) {
-        console.log('Stored auth loaded successfully');
-      }
-    } catch (error) {
-      console.log('No stored auth found or invalid:', error);
-      dispatch(clearAuth());
+const initializeApp = useCallback(async () => {
+  try {
+    const accessToken = await getStoredToken();
+    const refreshToken = await getStoredRefreshToken();
+
+    if (!accessToken || !refreshToken) {
+      console.log('Essential token missing, clearing auth state.');
+      await dispatch(clearAuth()); 
+      await removeStoredToken(); 
+      await removeStoredRefreshToken();
+      await removeUserData();
+      return;
     }
-  }, [dispatch]);
+    
+    const result = await dispatch(loadStoredAuth()).unwrap();
+    if (result && result.accessToken) {
+      console.log('Stored auth loaded successfully');
+    }
+  } catch (error) {
+    console.log('No stored auth found or invalid:', error);
+    dispatch(clearAuth());
+  }
+}, [dispatch]);
 
   const handleTokenRefresh = useCallback(async () => {
     // Éviter les refresh trop fréquents

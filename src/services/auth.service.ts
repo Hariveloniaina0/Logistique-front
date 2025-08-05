@@ -1,21 +1,38 @@
 // src/services/auth.service.ts
-import { getStoredRefreshToken } from '~/utils';
+import { getStoredRefreshToken, storeRefreshToken, storeToken, storeUserData } from '~/utils';
 import { LoginRequest, LoginResponse, User } from '../types';
 import { apiService } from './api';
 
 class AuthService {
-  async login(credentials: LoginRequest): Promise<LoginResponse> {
-    console.log('Attempting login...');
-    try {
-      const response = await apiService.post<LoginResponse>('/auth/login', credentials);
-      console.log('Login successful');
-      return response;
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
+// src/services/auth.service.ts
+async login(credentials: LoginRequest): Promise<LoginResponse> {
+  console.log('Attempting login with credentials:', { email: credentials.email });
+  try {
+    const response = await apiService.post<LoginResponse>('/auth/login', credentials);
+    console.log('Login response:', {
+      access_token: response.access_token ? 'Present' : 'Missing',
+      refresh_token: response.refresh_token ? 'Present' : 'Missing',
+      message: response.message,
+    });
+    if (!response.access_token) {
+      throw new Error('No access token in login response');
     }
+    if (!response.refresh_token) {
+      throw new Error('No refresh token in login response');
+    }
+    await storeToken(response.access_token);
+    console.log('Access token stored successfully');
+    await storeRefreshToken(response.refresh_token);
+    console.log('Refresh token stored successfully');
+    const profileResponse = await authService.getProfile();
+    await storeUserData(profileResponse.user);
+    console.log('User data stored:', { email: profileResponse.user.emailAddress, role: profileResponse.user.userRole });
+    return response;
+  } catch (error) {
+    console.error('Login failed:', error);
+    throw error;
   }
-
+}
   async logout(): Promise<void> {
     console.log('Attempting logout...');
     try {
