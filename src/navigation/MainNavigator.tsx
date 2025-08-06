@@ -1,8 +1,9 @@
-// src/navigation/MainNavigator.tsx
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { ImportScreen } from '../screens/main/ImportScreen';
+import { ProductScreen } from '../screens/main/ProductScreen';
+import { FtpSettingsScreen } from '../screens/main/FtpSettingsScreen';
 import { colors } from '../constants/colors';
 import { View, Text } from 'react-native';
 
@@ -15,6 +16,7 @@ export type MainStackParamList = {
   Inventaire: undefined;
   Reception: undefined;
   Import: undefined;
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -47,6 +49,20 @@ export const MainNavigator: React.FC = () => {
         }}
       />
       <Stack.Screen 
+        name="Produit" 
+        component={ProductScreen}
+        options={{
+          title: 'Produits',
+        }}
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={FtpSettingsScreen}
+        options={{
+          title: 'Paramètres FTP',
+        }}
+      />
+      <Stack.Screen 
         name="Etiquette" 
         component={PlaceholderScreen}
         options={{ title: 'Étiquettes' }}
@@ -62,11 +78,6 @@ export const MainNavigator: React.FC = () => {
         options={{ title: 'Démarques' }}
       />
       <Stack.Screen 
-        name="Produit" 
-        component={PlaceholderScreen}
-        options={{ title: 'Produits' }}
-      />
-      <Stack.Screen 
         name="Inventaire" 
         component={PlaceholderScreen}
         options={{ title: 'Inventaire' }}
@@ -80,7 +91,6 @@ export const MainNavigator: React.FC = () => {
   );
 };
 
-// Temporary placeholder component for unimplemented screens
 const PlaceholderScreen: React.FC = () => {
   return (
     <View className="flex-1 justify-center items-center">

@@ -4,7 +4,6 @@ import { LoginRequest, LoginResponse, User } from '../types';
 import { apiService } from './api';
 
 class AuthService {
-// src/services/auth.service.ts
 async login(credentials: LoginRequest): Promise<LoginResponse> {
   console.log('Attempting login with credentials:', { email: credentials.email });
   try {

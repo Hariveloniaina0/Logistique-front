@@ -1,3 +1,4 @@
+//src\types\auth.types.ts
 export enum UserRole {
   ADMIN = 'admin',
   MANAGER = 'manager',

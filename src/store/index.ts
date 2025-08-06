@@ -1,23 +1,40 @@
-// src/store/index.ts
+//src\store\index.ts
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
-import { RootState, AuthState } from './types';
+import productReducer from './slices/productSlice';
+import ftpReducer from './slices/ftpSlice';
+import { AuthState, ProductState, FtpState } from './types';
 
-const persistConfig: PersistConfig<AuthState> = {
+const authPersistConfig: PersistConfig<AuthState> = {
   key: 'auth',
   storage: AsyncStorage,
-  whitelist: ['user', 'accessToken', 'isAuthenticated','refreshToken'],
+  whitelist: ['user', 'accessToken', 'isAuthenticated', 'refreshToken'],
 };
 
-const persistedReducer = persistReducer(persistConfig, authReducer);
+const productPersistConfig: PersistConfig<ProductState> = {
+  key: 'products',
+  storage: AsyncStorage,
+  whitelist: [],
+};
 
-// Configure the store
+const ftpPersistConfig: PersistConfig<FtpState> = {
+  key: 'ftp',
+  storage: AsyncStorage,
+  whitelist: ['config'],
+};
+
+const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+const persistedProductReducer = persistReducer(productPersistConfig, productReducer);
+const persistedFtpReducer = persistReducer(ftpPersistConfig, ftpReducer);
+
 export const store = configureStore({
   reducer: {
-    auth: persistedReducer, 
+    auth: persistedAuthReducer,
+    products: persistedProductReducer,
+    ftp: persistedFtpReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -28,10 +45,9 @@ export const store = configureStore({
     }),
 });
 
-// Create persistor
 export const persistor = persistStore(store);
 
-// Define types
+export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
@@ -40,6 +56,5 @@ export type AppThunk<ReturnType = void> = ThunkAction<
   Action<string>
 >;
 
-// Typed hooks
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;

@@ -2,7 +2,7 @@
 export * from './colors';
 
 export const APP_CONFIG = {
-  APP_NAME: 'StoreManager',
+  APP_NAME: 'LogiTrack',
   VERSION: '1.0.0',
   API_TIMEOUT: 10000,
   TOKEN_REFRESH_THRESHOLD: 5 * 60 * 1000, // 5 minutes
