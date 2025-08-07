@@ -14,6 +14,8 @@ export const ProductScreen: React.FC<ProductScreenProps> = ({ route }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+
+
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
@@ -35,6 +37,9 @@ export const ProductScreen: React.FC<ProductScreenProps> = ({ route }) => {
 
     const renderProductItem = ({ item }: { item: Product }) => {
         const totalStock = item.stocks?.reduce((sum, stock) => sum + stock.quantity, 0) ?? 0;
+        const priceCaisse = item.priceCaisse != null ? parseFloat(String(item.priceCaisse)) : null;
+        const priceGestcom = item.priceGestcom != null ? parseFloat(String(item.priceGestcom)) : null;
+
         return (
             <View className="bg-white p-4 rounded-lg mb-2 border" style={{ borderColor: colors.neutral }}>
                 <Text className="font-semibold" style={{ color: colors.text }}>
@@ -49,12 +54,11 @@ export const ProductScreen: React.FC<ProductScreenProps> = ({ route }) => {
                 <Text style={{ color: colors.textLight }}>
                     Stock total: {totalStock}
                 </Text>
-
                 <Text style={{ color: colors.textLight }}>
-                    Prix Caisse: {typeof item.priceCaisse === 'number' ? item.priceCaisse.toFixed(2) : 'N/A'} €
+                    Prix Caisse: {priceCaisse != null && !isNaN(priceCaisse) ? priceCaisse.toFixed(2) : 'N/A'} €
                 </Text>
                 <Text style={{ color: colors.textLight }}>
-                    Prix Gestcom: {typeof item.priceGestcom === 'number' ? item.priceGestcom.toFixed(2) : 'N/A'} €
+                    Prix Gestcom: {priceGestcom != null && !isNaN(priceGestcom) ? priceGestcom.toFixed(2) : 'N/A'} €
                 </Text>
             </View>
         );
