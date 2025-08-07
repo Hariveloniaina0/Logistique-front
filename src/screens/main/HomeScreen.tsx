@@ -361,6 +361,22 @@ export const HomeScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  className="flex-row items-center p-4 rounded-xl mb-3"
+                  style={{ backgroundColor: colors.background }}
+                  onPress={() => {
+                    closeMenu();
+                    setTimeout(() => navigation.navigate('WorkZone'), 50);
+                  }}
+                >
+                  <View className="w-10 h-10 rounded-lg mr-3 items-center justify-center" style={{ backgroundColor: colors.primaryLight }}>
+                    <Text className="text-lg">🏢</Text>
+                  </View>
+                  <Text className="text-base" style={{ color: colors.text }}>
+                    Zone de travail
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                   className="flex-row items-center p-4 rounded-xl"
                   style={{ backgroundColor: colors.background }}
                   onPress={() => Alert.alert('À propos', 'Store Manager v1.0.0')}

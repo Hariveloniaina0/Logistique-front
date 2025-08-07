@@ -1,3 +1,7 @@
+import { Order } from "./order.types";
+import { Stock } from "./stock.types";
+import { WriteOff } from "./writeOff.types";
+
 // src/types/product.types.ts
 export interface Product {
   idProduct: number;
@@ -10,27 +14,6 @@ export interface Product {
   stocks?: Stock[];
   orders?: Order[];
   writeOffs?: WriteOff[];
-}
-
-export interface Stock {
-  id: number;
-  quantity: number;
-  location: string;
-  product: Product;
-}
-
-export interface Order {
-  id: number;
-  quantity: number;
-  status: string;
-  product: Product;
-}
-
-export interface WriteOff {
-  id: number;
-  quantity: number;
-  reason: string;
-  product: Product;
 }
 
 export interface ProductState {

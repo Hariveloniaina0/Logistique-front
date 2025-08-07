@@ -1,4 +1,3 @@
-// src/types/import.types.ts
 export interface FileAsset {
   uri: string;
   name: string;
@@ -25,4 +24,19 @@ export interface ImportProgress {
   totalSteps: number;
   isProcessing: boolean;
   message?: string;
+}
+
+export interface ImportHeaders {
+  headers: string[];
+}
+
+export interface ImportResult {
+  message: string;
+  importedCount: number;
+  errors?: string[];
+  skippedCount?: number;
+}
+
+export interface FieldMapping {
+  [fileHeader: string]: string;
 }

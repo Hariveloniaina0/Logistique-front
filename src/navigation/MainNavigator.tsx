@@ -8,6 +8,11 @@ import { colors } from '../constants/colors';
 import { View, Text } from 'react-native';
 import OrderScreen from '~/screens/main/OrderScreen';
 import { FtpSettingsScreen } from '~/screens/main/FtpSettingsScreen';
+import { StoreListScreen } from '~/screens/main/StoreListScreen';
+import { SupplierListScreen } from '~/screens/main/SupplierListScreen';
+import { WarehouseListScreen } from '~/screens/main/WarehouseListScreen';
+import { WorkZoneScreen } from '~/screens/main/WorkZoneScreen';
+import { StockScreen } from '~/screens/main/StockScreen';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -19,6 +24,11 @@ export type MainStackParamList = {
   Reception: undefined;
   Import: undefined;
   Settings: undefined;
+  WorkZone: undefined;
+  SupplierList: undefined;
+  WarehouseList: undefined;
+  StoreList: undefined;
+  Stock: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -87,6 +97,12 @@ export const MainNavigator: React.FC = () => {
         component={FtpSettingsScreen}
         options={{ title: 'Settings' }}
       />
+      <Stack.Screen name="WorkZone" component={WorkZoneScreen} options={{ title: 'Zone de travail' }} />
+      <Stack.Screen name="SupplierList" component={SupplierListScreen} options={{ title: 'Fournisseurs' }} />
+      <Stack.Screen name="WarehouseList" component={WarehouseListScreen} options={{ title: 'Entrepôts' }} />
+      <Stack.Screen name="StoreList" component={StoreListScreen} options={{ title: 'Magasins' }} />
+      <Stack.Screen name="Stock" component={StockScreen} options={{ title: 'Stock' }} />
+
     </Stack.Navigator>
   );
 };

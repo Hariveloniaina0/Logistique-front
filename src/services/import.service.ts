@@ -1,24 +1,8 @@
-// src/services/import.service.ts
 import { apiService } from './api';
 import * as DocumentPicker from 'expo-document-picker';
-
-export interface ImportHeaders {
-  headers: string[];
-}
-
-export interface ImportResult {
-  skippedCount: any;
-  message: string;
-  importedCount: number;
-  errors?: string[];
-}
-
-export interface FieldMapping {
-  [fileHeader: string]: string;
-}
+import { FieldMapping, ImportHeaders, ImportResult } from '../types/import.types';
 
 class ImportService {
-  
   async extractHeaders(file: DocumentPicker.DocumentPickerAsset): Promise<ImportHeaders> {
     console.log('Extracting headers for file:', {
       name: file.name,
@@ -46,7 +30,6 @@ class ImportService {
   async importProducts(file: File | any, mappings: FieldMapping): Promise<ImportResult> {
     const formData = new FormData();
 
-    // Ajouter le fichier
     if (file.uri) {
       formData.append('file', {
         uri: file.uri,
@@ -57,7 +40,6 @@ class ImportService {
       formData.append('file', file);
     }
 
-    // Ajouter les mappings
     formData.append('mappings', JSON.stringify(mappings));
 
     console.log('Starting import with mappings:', mappings);
@@ -66,20 +48,17 @@ class ImportService {
     return response;
   }
 
-  // Fonction utilitaire pour valider les mappings
   validateMappings(mappings: FieldMapping): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
     const requiredFields = ['productCode', 'barcodeValue', 'productName'];
     const mappedValues = Object.values(mappings).filter(value => value !== '');
 
-    // Vérifier que les champs obligatoires sont mappés
     for (const field of requiredFields) {
       if (!mappedValues.includes(field)) {
         errors.push(`Le champ obligatoire "${field}" doit être mappé`);
       }
     }
 
-    // Vérifier qu'il n'y a pas de doublons dans les mappings
     const duplicates = mappedValues.filter((value, index) =>
       mappedValues.indexOf(value) !== index && value !== ''
     );
@@ -94,13 +73,12 @@ class ImportService {
     };
   }
 
-  // Obtenir les champs disponibles pour le mapping
   getAvailableFields(): Array<{ value: string; label: string; required: boolean }> {
     return [
       { value: 'productCode', label: 'Code Produit', required: true },
       { value: 'barcodeValue', label: 'Code-barres', required: true },
       { value: 'productName', label: 'Nom du Produit', required: true },
-      { value: 'productQuantity', label: 'Quantité', required: false },
+      { value: 'stockQuantity', label: 'Quantité de Stock', required: false },
       { value: 'priceCaisse', label: 'Prix Caisse', required: false },
       { value: 'priceGestcom', label: 'Prix Gestcom', required: false },
       { value: 'storeName', label: 'Nom du Magasin', required: false },
@@ -111,3 +89,5 @@ class ImportService {
 }
 
 export const importService = new ImportService();
+
+export { ImportResult, FieldMapping, ImportHeaders };

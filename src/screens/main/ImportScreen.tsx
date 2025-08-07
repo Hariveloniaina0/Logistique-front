@@ -26,6 +26,7 @@ export const ImportScreen: React.FC = () => {
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [mappings, setMappings] = useState<FieldMapping>({});
+  const [stockLocation, setStockLocation] = useState<'store' | 'warehouse' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
@@ -34,7 +35,8 @@ export const ImportScreen: React.FC = () => {
   const steps: ImportStep[] = [
     { step: 1, title: 'Sélectionner le fichier', completed: !!file },
     { step: 2, title: 'Mapper les colonnes', completed: !!file && headers.length > 0 },
-    { step: 3, title: 'Importer les données', completed: !!importResult },
+    { step: 3, title: 'Choisir la localisation du stock', completed: !!stockLocation },
+    { step: 4, title: 'Importer les données', completed: !!importResult },
   ];
 
   const availableFields = importService.getAvailableFields();
@@ -43,6 +45,7 @@ export const ImportScreen: React.FC = () => {
     setFile(null);
     setHeaders([]);
     setMappings({});
+    setStockLocation(null);
     setError(null);
     setCurrentStep(1);
     setImportResult(null);
@@ -87,9 +90,8 @@ export const ImportScreen: React.FC = () => {
       const response: ImportHeaders = await importService.extractHeaders(selectedFile);
       setHeaders(response.headers);
 
-      // Auto-mapping intelligent basé sur les noms des colonnes
       const autoMappings: FieldMapping = {};
-      response.headers.forEach(header => {
+      response.headers.forEach((header: string) => {
         const normalizedHeader = header.toLowerCase().trim();
         if (normalizedHeader.includes('code') && normalizedHeader.includes('produit')) {
           autoMappings[header] = 'productCode';
@@ -98,7 +100,7 @@ export const ImportScreen: React.FC = () => {
         } else if (normalizedHeader.includes('nom') && normalizedHeader.includes('produit')) {
           autoMappings[header] = 'productName';
         } else if (normalizedHeader.includes('quantit')) {
-          autoMappings[header] = 'productQuantity';
+          autoMappings[header] = 'stockQuantity';
         } else if (normalizedHeader.includes('prix') && normalizedHeader.includes('caisse')) {
           autoMappings[header] = 'priceCaisse';
         } else if (normalizedHeader.includes('prix') && normalizedHeader.includes('gestcom')) {
@@ -136,19 +138,18 @@ export const ImportScreen: React.FC = () => {
   };
 
   const handleHeaderMapping = (header: string, field: string) => {
-    setMappings(prev => ({
+    setMappings((prev: any) => ({
       ...prev,
       [header]: field,
     }));
   };
 
-  const validateAndImport = async () => {
+  const validateAndProceed = () => {
     if (!file) {
       Alert.alert('Erreur', 'Aucun fichier sélectionné');
       return;
     }
 
-    // Valider les mappings
     const validation = importService.validateMappings(mappings);
 
     if (!validation.isValid) {
@@ -156,18 +157,11 @@ export const ImportScreen: React.FC = () => {
       return;
     }
 
-    Alert.alert(
-      'Confirmer l\'importation',
-      `Êtes-vous sûr de vouloir importer les données du fichier "${file.name}" ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Importer', onPress: handleImport }
-      ]
-    );
+    setCurrentStep(3);
   };
 
   const handleImport = async () => {
-    if (!file) return;
+    if (!file || !stockLocation) return;
 
     try {
       setIsLoading(true);
@@ -176,7 +170,7 @@ export const ImportScreen: React.FC = () => {
       const result: ImportResult = await importService.importProducts(file, mappings);
 
       setImportResult(result);
-      setCurrentStep(3);
+      setCurrentStep(4);
 
       Alert.alert(
         'Import réussi! 🎉',
@@ -326,9 +320,50 @@ export const ImportScreen: React.FC = () => {
             Vérifiez et ajustez si nécessaire.
           </Text>
         </View>
+
+        <Button
+          title="Suivant"
+          variant="primary"
+          onPress={validateAndProceed}
+          disabled={isLoading || !file || headers.length === 0}
+        />
       </View>
     );
   };
+
+  const renderStockLocationSelection = () => (
+    <View className="mb-6">
+      <Text className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
+        🏬 Choisir la localisation du stock
+      </Text>
+
+      <Text className="text-sm mb-4" style={{ color: colors.textLight }}>
+        Sélectionnez où la quantité de stock doit être enregistrée:
+      </Text>
+
+      <View className="border rounded-lg" style={{
+        borderColor: colors.neutral,
+        backgroundColor: colors.white
+      }}>
+        <Picker
+          selectedValue={stockLocation || ''}
+          onValueChange={(value: 'store' | 'warehouse' | '') => setStockLocation(value || null)}
+          style={{ height: 50 }}
+        >
+          <Picker.Item label="-- Sélectionner une localisation --" value="" />
+          <Picker.Item label="Entrepôt" value="warehouse" />
+          <Picker.Item label="Magasin" value="store" />
+        </Picker>
+      </View>
+
+      <Button
+        title="Suivant"
+        variant="primary"
+        onPress={() => setCurrentStep(4)}
+        disabled={isLoading || !stockLocation}
+      />
+    </View>
+  );
 
   const renderImportSection = () => (
     <View className="mb-6">
@@ -354,7 +389,7 @@ export const ImportScreen: React.FC = () => {
               <Text className="font-medium" style={{ color: colors.warning }}>
                 ⚠️ Avertissements:
               </Text>
-              {importResult.errors.map((error, index) => (
+              {importResult.errors.map((error: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined, index: React.Key | null | undefined) => (
                 <Text key={index} className="text-sm" style={{ color: colors.warning }}>
                   • {error}
                 </Text>
@@ -367,9 +402,16 @@ export const ImportScreen: React.FC = () => {
           title="Importer les données"
           variant="primary"
           size="large"
-          onPress={validateAndImport}
+          onPress={() => Alert.alert(
+            'Confirmer l\'importation',
+            `Êtes-vous sûr de vouloir importer les données du fichier "${file?.name}" ?`,
+            [
+              { text: 'Annuler', style: 'cancel' },
+              { text: 'Importer', onPress: handleImport }
+            ]
+          )}
           loading={isLoading}
-          disabled={isLoading || !file || headers.length === 0}
+          disabled={isLoading || !file || headers.length === 0 || !stockLocation}
         />
       )}
     </View>
@@ -404,9 +446,10 @@ export const ImportScreen: React.FC = () => {
               </View>
             )}
 
-            {renderFileSelection()}
-            {renderMappingSection()}
-            {renderImportSection()}
+            {currentStep === 1 && renderFileSelection()}
+            {currentStep === 2 && renderMappingSection()}
+            {currentStep === 3 && renderStockLocationSelection()}
+            {currentStep === 4 && renderImportSection()}
 
             {importResult && (
               <View className="mt-4">
