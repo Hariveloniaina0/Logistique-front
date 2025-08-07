@@ -10,7 +10,6 @@ import { colors } from '../constants/colors';
 export const AppNavigator: React.FC = () => {
   const { isAuthenticated, isLoading } = useGlobalContext();
 
-  // Afficher un écran de chargement pendant l'initialisation
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center" style={{ backgroundColor: colors.background }}>

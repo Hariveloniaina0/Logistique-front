@@ -6,7 +6,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
 import productReducer from './slices/productSlice';
 import ftpReducer from './slices/ftpSlice';
+import ordersReducer from './slices/orderSlice';
 import { AuthState, ProductState, FtpState } from './types';
+
+
 
 const authPersistConfig: PersistConfig<AuthState> = {
   key: 'auth',
@@ -30,11 +33,13 @@ const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedProductReducer = persistReducer(productPersistConfig, productReducer);
 const persistedFtpReducer = persistReducer(ftpPersistConfig, ftpReducer);
 
+
 export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
     products: persistedProductReducer,
     ftp: persistedFtpReducer,
+    orders: ordersReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -44,7 +49,6 @@ export const store = configureStore({
       },
     }),
 });
-
 export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;

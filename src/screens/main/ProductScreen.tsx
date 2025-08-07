@@ -320,7 +320,6 @@ export const ProductScreen: React.FC = () => {
                             {totalProducts} produit{totalProducts !== 1 ? 's' : ''} 
                         </Text>
                     </View>
-
                     <View
                         className="w-12 h-12 rounded-full items-center justify-center"
                         style={{ backgroundColor: colors.primaryLight }}

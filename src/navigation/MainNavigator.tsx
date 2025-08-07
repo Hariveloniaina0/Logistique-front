@@ -1,11 +1,13 @@
+// src/navigation/MainNavigator.tsx
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { ImportScreen } from '../screens/main/ImportScreen';
 import { ProductScreen } from '../screens/main/ProductScreen';
-import { FtpSettingsScreen } from '../screens/main/FtpSettingsScreen';
 import { colors } from '../constants/colors';
 import { View, Text } from 'react-native';
+import OrderScreen from '~/screens/main/OrderScreen';
+import { FtpSettingsScreen } from '~/screens/main/FtpSettingsScreen';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -34,63 +36,62 @@ export const MainNavigator: React.FC = () => {
         },
       }}
     >
-      <Stack.Screen 
-        name="Home" 
+      <Stack.Screen
+        name="Home"
         component={HomeScreen}
         options={{
           title: 'Accueil',
         }}
       />
-      <Stack.Screen 
-        name="Import" 
+      <Stack.Screen
+        name="Import"
         component={ImportScreen}
         options={{
           title: 'Importer des données',
         }}
       />
-      <Stack.Screen 
-        name="Produit" 
+      <Stack.Screen
+        name="Produit"
         component={ProductScreen}
         options={{
           title: 'Produits',
         }}
       />
-      <Stack.Screen 
-        name="Settings" 
-        component={FtpSettingsScreen}
-        options={{
-          title: 'Paramètres FTP',
-        }}
-      />
-      <Stack.Screen 
-        name="Etiquette" 
+      <Stack.Screen
+        name="Etiquette"
         component={PlaceholderScreen}
         options={{ title: 'Étiquettes' }}
       />
-      <Stack.Screen 
-        name="Commande" 
-        component={PlaceholderScreen}
+      <Stack.Screen
+        name="Commande"
+        component={OrderScreen}
         options={{ title: 'Commandes' }}
       />
-      <Stack.Screen 
-        name="Demarque" 
+      <Stack.Screen
+        name="Demarque"
         component={PlaceholderScreen}
         options={{ title: 'Démarques' }}
       />
-      <Stack.Screen 
-        name="Inventaire" 
+      <Stack.Screen
+        name="Inventaire"
         component={PlaceholderScreen}
         options={{ title: 'Inventaire' }}
       />
-      <Stack.Screen 
-        name="Reception" 
+      <Stack.Screen
+        name="Reception"
         component={PlaceholderScreen}
         options={{ title: 'Réception' }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={FtpSettingsScreen}
+        options={{ title: 'Settings' }}
       />
     </Stack.Navigator>
   );
 };
 
+// Temporary placeholder component for unimplemented screens
 const PlaceholderScreen: React.FC = () => {
   return (
     <View className="flex-1 justify-center items-center">
