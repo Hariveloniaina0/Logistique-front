@@ -1,18 +1,18 @@
-// src/navigation/MainNavigator.tsx
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { ImportScreen } from '../screens/main/ImportScreen';
 import { ProductScreen } from '../screens/main/ProductScreen';
+import { ProductDetailsScreen } from '../screens/main/ProductDetailsScreen';
 import { colors } from '../constants/colors';
 import { View, Text } from 'react-native';
-import OrderScreen from '~/screens/main/OrderScreen';
-import { FtpSettingsScreen } from '~/screens/main/FtpSettingsScreen';
-import { StoreListScreen } from '~/screens/main/StoreListScreen';
-import { SupplierListScreen } from '~/screens/main/SupplierListScreen';
-import { WarehouseListScreen } from '~/screens/main/WarehouseListScreen';
-import { WorkZoneScreen } from '~/screens/main/WorkZoneScreen';
-import { StockScreen } from '~/screens/main/StockScreen';
+import OrderScreen from '../screens/main/OrderScreen';
+import { FtpSettingsScreen } from '../screens/main/FtpSettingsScreen';
+import { StoreListScreen } from '../screens/main/StoreListScreen';
+import { SupplierListScreen } from '../screens/main/SupplierListScreen';
+import { WarehouseListScreen } from '../screens/main/WarehouseListScreen';
+import { WorkZoneScreen } from '../screens/main/WorkZoneScreen';
+import { StockScreen } from '../screens/main/StockScreen';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -20,6 +20,7 @@ export type MainStackParamList = {
   Commande: undefined;
   Demarque: undefined;
   Produit: undefined;
+  ProductDetails: { productId: number };
   Inventaire: undefined;
   Reception: undefined;
   Import: undefined;
@@ -49,23 +50,22 @@ export const MainNavigator: React.FC = () => {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{
-          title: 'Accueil',
-        }}
+        options={{ title: 'Accueil' }}
       />
       <Stack.Screen
         name="Import"
         component={ImportScreen}
-        options={{
-          title: 'Importer des données',
-        }}
+        options={{ title: 'Importer des données' }}
       />
       <Stack.Screen
         name="Produit"
         component={ProductScreen}
-        options={{
-          title: 'Produits',
-        }}
+        options={{ title: 'Produits' }}
+      />
+      <Stack.Screen
+        name="ProductDetails"
+        component={ProductDetailsScreen}
+        options={{ title: 'Détails du Produit' }}
       />
       <Stack.Screen
         name="Etiquette"
@@ -102,12 +102,10 @@ export const MainNavigator: React.FC = () => {
       <Stack.Screen name="WarehouseList" component={WarehouseListScreen} options={{ title: 'Entrepôts' }} />
       <Stack.Screen name="StoreList" component={StoreListScreen} options={{ title: 'Magasins' }} />
       <Stack.Screen name="Stock" component={StockScreen} options={{ title: 'Stock' }} />
-
     </Stack.Navigator>
   );
 };
 
-// Temporary placeholder component for unimplemented screens
 const PlaceholderScreen: React.FC = () => {
   return (
     <View className="flex-1 justify-center items-center">
