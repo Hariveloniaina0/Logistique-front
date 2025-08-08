@@ -4,6 +4,7 @@ import { AuthState, Supplier } from '../../types';
 import { FtpState } from '~/types/ftp.types';
 import { Warehouse } from '~/types/warehouse.types';
 import { Store } from '~/types/store.types';
+import { WriteOffState } from '~/types/writeOff.types';
 
 export interface SupplierState {
   suppliers: Supplier[];
@@ -30,6 +31,7 @@ export interface RootState {
   suppliers: SupplierState;
   warehouses: WarehouseState;
   stores: StoreState;
+  writeOff: WriteOffState;
 }
 
 export { AuthState, ProductState, FtpState };

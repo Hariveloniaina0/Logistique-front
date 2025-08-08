@@ -11,6 +11,7 @@ import warehouseReducer from './slices/warehouseSlice';
 import storeReducer from './slices/storeSlice';
 import ordersReducer from './slices/orderSlice';
 import stockReducer from './slices/stock.slice';
+import writeOffReducer from './slices/writeOffSlice';
 
 import { AuthState, ProductState, FtpState } from './types';
 
@@ -46,7 +47,8 @@ export const store = configureStore({
     stores: storeReducer,
     orders: ordersReducer,
     stock: stockReducer,
-  },
+    writeOff: writeOffReducer,
+   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {

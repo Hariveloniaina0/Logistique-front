@@ -14,6 +14,7 @@ import { WarehouseListScreen } from '../screens/main/WarehouseListScreen';
 import { WorkZoneScreen } from '../screens/main/WorkZoneScreen';
 import { StockScreen } from '../screens/main/StockScreen';
 import { LabelScreen } from '~/screens/main/LabelScreen';
+import { WriteOffScreen } from '~/screens/main/WriteOffScreen';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -80,7 +81,7 @@ export const MainNavigator: React.FC = () => {
       />
       <Stack.Screen
         name="Demarque"
-        component={PlaceholderScreen}
+        component={WriteOffScreen}
         options={{ title: 'Démarques' }}
       />
       <Stack.Screen
