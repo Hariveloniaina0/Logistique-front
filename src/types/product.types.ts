@@ -29,4 +29,6 @@ export interface ProductState {
   searchResults: Product[];
   isSearching: boolean;
   selectedProduct: Product | null;
+  pendingOrders: Order[];
+
 }

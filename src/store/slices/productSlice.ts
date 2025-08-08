@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Product } from '../../types/product.types';
 import { apiService } from '../../services/api';
 import { ProductState } from '../types';
+import { Order } from '~/types/order.types';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -29,6 +30,7 @@ const initialState: ProductState = {
   searchResults: [],
   isSearching: false,
   selectedProduct: null,
+  pendingOrders: [],
 };
 
 // Thunks
@@ -42,7 +44,7 @@ export const fetchProducts = createAsyncThunk<
       page: page.toString(),
       limit: limit.toString(),
     });
-    
+
     if (search && search.trim()) {
       params.append('search', search.trim());
     }
@@ -96,6 +98,19 @@ export const getProductByBarcode = createAsyncThunk<
   }
 });
 
+export const getPendingOrdersForProduct = createAsyncThunk<
+  Order[],
+  number,
+  { rejectValue: string }
+>('products/getPendingOrdersForProduct', async (productId, { rejectWithValue }) => {
+  try {
+    const response = await apiService.get<Order[]>(`/products/${productId}/pending-orders`);
+    return response;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'Erreur lors du chargement des commandes');
+  }
+});
+
 const productSlice = createSlice({
   name: 'products',
   initialState,
@@ -137,7 +152,7 @@ const productSlice = createSlice({
       .addCase(fetchProducts.fulfilled, (state, action) => {
         const { data, meta } = action.payload;
         const isFirstPage = action.meta.arg.page === 1 || action.meta.arg.refresh;
-        
+
         if (isFirstPage) {
           state.products = data;
           state.isLoading = false;
@@ -148,7 +163,7 @@ const productSlice = createSlice({
           state.products = [...state.products, ...newProducts];
           state.isLoadingMore = false;
         }
-        
+
         state.currentPage = meta.page;
         state.totalPages = meta.totalPages;
         state.totalItems = meta.total;
@@ -160,60 +175,73 @@ const productSlice = createSlice({
         state.isLoadingMore = false;
         state.error = action.payload as string;
       })
-      
+
+      // Get pending orders for product
+      .addCase(getPendingOrdersForProduct.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getPendingOrdersForProduct.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.pendingOrders = action.payload; 
+      })
+      .addCase(getPendingOrdersForProduct.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+
       // Search products
       .addCase(searchProducts.pending, (state) => {
         state.isSearching = true;
         state.error = null;
       })
-      .addCase(searchProducts.fulfilled, (state, action) => {
-        state.isSearching = false;
-        state.searchResults = action.payload;
-        state.error = null;
-      })
-      .addCase(searchProducts.rejected, (state, action) => {
-        state.isSearching = false;
-        state.error = action.payload as string;
-      })
-      
-      // Get product by ID
-      .addCase(getProductById.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(getProductById.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.selectedProduct = action.payload;
-        state.error = null;
-      })
-      .addCase(getProductById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      
-      // Get product by barcode
-      .addCase(getProductByBarcode.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(getProductByBarcode.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.selectedProduct = action.payload;
-        state.error = null;
-      })
-      .addCase(getProductByBarcode.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      });
-  },
+    .addCase(searchProducts.fulfilled, (state, action) => {
+      state.isSearching = false;
+      state.searchResults = action.payload;
+      state.error = null;
+    })
+    .addCase(searchProducts.rejected, (state, action) => {
+      state.isSearching = false;
+      state.error = action.payload as string;
+    })
+
+    // Get product by ID
+    .addCase(getProductById.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    })
+    .addCase(getProductById.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.selectedProduct = action.payload;
+      state.error = null;
+    })
+    .addCase(getProductById.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload as string;
+    })
+
+    // Get product by barcode
+    .addCase(getProductByBarcode.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    })
+    .addCase(getProductByBarcode.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.selectedProduct = action.payload;
+      state.error = null;
+    })
+    .addCase(getProductByBarcode.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload as string;
+    });
+},
 });
 
-export const { 
-  clearError, 
-  setSearchTerm, 
-  clearSearchResults, 
-  resetProducts, 
-  setSelectedProduct 
+export const {
+  clearError,
+  setSearchTerm,
+  clearSearchResults,
+  resetProducts,
+  setSelectedProduct
 } = productSlice.actions;
 
 export default productSlice.reducer;
