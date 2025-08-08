@@ -4,7 +4,7 @@ import { Layout } from '../../components/common/Layout';
 import { Button, Input } from '../../components/ui';
 import { Picker } from '@react-native-picker/picker';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchOrders } from '../../store/slices/orderSlice';
+import { fetchOrders, clearError, updateOrder, deleteOrder } from '../../store/slices/orderSlice';
 import { colors } from '../../constants/colors';
 import { apiService } from '../../services/api';
 import { Product } from '../../types/product.types';
@@ -72,6 +72,7 @@ const OrderScreen: React.FC = () => {
       Alert.alert('Erreur', 'Utilisateur non connecté');
       return;
     }
+
     const orderData = {
       productId: formData.selectedProduct.idProduct,
       userId: user.idUser,
@@ -79,10 +80,11 @@ const OrderScreen: React.FC = () => {
       status: formData.status,
       ordersDate: new Date(),
     };
+
     try {
       if (isEditing && currentOrderId) {
         await updateOrder(currentOrderId, orderData);
-        Alert.alert('Succès', 'Commande mise à jour avec succès');
+        Alert.alert('Succès', formData.status === 'received' ? 'Commande reçue et stock mis à jour' : 'Commande mise à jour avec succès');
       } else {
         await apiService.post('/orders', orderData);
         Alert.alert('Succès', 'Commande ajoutée avec succès');
@@ -160,6 +162,9 @@ const OrderScreen: React.FC = () => {
         <Text className="text-2xl font-bold mb-4" style={{ color: colors.text }}>
           Liste des commandes
         </Text>
+        {error && (
+          <Text className="text-center text-red-500 mt-4">{error}</Text>
+        )}
         {orders.length > 0 ? (
           <FlatList
             data={orders}
@@ -230,7 +235,7 @@ const OrderScreen: React.FC = () => {
               value={formData.barcode}
               onChangeText={(text) => setFormData({ ...formData, barcode: text })}
               placeholder="Entrez le code-barres"
-              editable={!isEditing} // Disable barcode input when editing
+              editable={!isEditing}
             />
             <Button
               title="Rechercher produit"
@@ -247,10 +252,6 @@ const OrderScreen: React.FC = () => {
                 <Text className="text-base font-semibold mb-2" style={{ color: colors.text }}>
                   Produit sélectionné: {formData.selectedProduct.productName}
                 </Text>
-              </View>
-            )}
-            {formData.selectedProduct && (
-              <>
                 <Input
                   label="Quantité"
                   value={formData.quantity}
@@ -270,7 +271,7 @@ const OrderScreen: React.FC = () => {
                   <Picker.Item label="Reçu" value="received" />
                   <Picker.Item label="Annulé" value="canceled" />
                 </Picker>
-              </>
+              </View>
             )}
             <View className="flex-row justify-between mt-4">
               <Button

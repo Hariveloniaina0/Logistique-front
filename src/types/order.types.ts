@@ -9,6 +9,8 @@ export interface Order {
   status: string;
   ordersDate: Date;
   createdAt: Date;
+  warehouseId?: number; 
+  storeId?: number;
 }
 
 export interface OrdersState {
