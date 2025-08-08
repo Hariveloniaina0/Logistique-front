@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchProducts, searchProducts, clearSearchResults, setSearchTerm } from '../../store/slices/productSlice';
 import { Product } from '../../types/product.types';
 import { MainStackParamList } from '../../navigation/MainNavigator';
+import { useDebounce } from '../../hooks/useDebounce';
 
 type ProductScreenNavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -21,8 +22,10 @@ export const ProductScreen: React.FC<ProductScreenProps> = ({ route }) => {
     const dispatch = useDispatch<AppDispatch>();
     const { products, searchResults, isLoading, isSearching, searchTerm, error } = useSelector((state: RootState) => state.products);
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+    const debouncedSearchTerm = useDebounce(localSearchTerm, 1000); // Debounce for 1s
     const navigation = useNavigation<ProductScreenNavigationProp>();
 
+    // Fetch initial products on mount and clear search results on unmount
     useEffect(() => {
         dispatch(fetchProducts({ page: 1 }));
         return () => {
@@ -30,14 +33,15 @@ export const ProductScreen: React.FC<ProductScreenProps> = ({ route }) => {
         };
     }, [dispatch]);
 
-    const handleSearch = useCallback(() => {
-        if (localSearchTerm.trim()) {
-            dispatch(setSearchTerm(localSearchTerm));
-            dispatch(searchProducts(localSearchTerm));
+    // Trigger search when debounced search term changes
+    useEffect(() => {
+        if (debouncedSearchTerm.trim()) {
+            dispatch(setSearchTerm(debouncedSearchTerm));
+            dispatch(searchProducts(debouncedSearchTerm));
         } else {
             dispatch(clearSearchResults());
         }
-    }, [localSearchTerm, dispatch]);
+    }, [debouncedSearchTerm, dispatch]);
 
     const handleClearSearch = () => {
         setLocalSearchTerm('');
@@ -94,7 +98,6 @@ export const ProductScreen: React.FC<ProductScreenProps> = ({ route }) => {
                             placeholder="Search by name, code, or barcode..."
                             value={localSearchTerm}
                             onChangeText={setLocalSearchTerm}
-                            onSubmitEditing={handleSearch}
                             containerStyle="flex-1"
                             style={{ backgroundColor: colors.white }}
                         />
