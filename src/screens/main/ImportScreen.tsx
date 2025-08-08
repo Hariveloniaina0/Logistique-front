@@ -7,7 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
 } from 'react-native';
 import { Layout } from '../../components/common/Layout';
 import { Button } from '../../components/ui';
@@ -65,7 +65,7 @@ export const ImportScreen: React.FC = () => {
         const selectedFile = result.assets[0];
         const extension = selectedFile.name.toLowerCase().split('.').pop();
         if (!extension || !['csv', 'xlsx', 'xls'].includes(extension)) {
-          setError("Format de fichier non supporté. Veuillez sélectionner un fichier CSV ou Excel.");
+          setError('Format de fichier non supporté. Veuillez sélectionner un fichier CSV ou Excel.');
           Alert.alert('Erreur', 'Format de fichier non supporté. Veuillez sélectionner un fichier CSV ou Excel.');
           return;
         }
@@ -75,7 +75,7 @@ export const ImportScreen: React.FC = () => {
       }
     } catch (err) {
       console.error('Document pick error:', err);
-      setError("Erreur lors de la sélection du fichier");
+      setError('Erreur lors de la sélection du fichier');
       Alert.alert('Erreur', 'Impossible de sélectionner le fichier');
     } finally {
       setIsLoading(false);
@@ -177,7 +177,7 @@ export const ImportScreen: React.FC = () => {
         `${result.importedCount} produits ont été importés avec succès.${result.skippedCount ? ` ${result.skippedCount} lignes ignorées.` : ''}`,
         [
           { text: 'Nouvel import', onPress: resetImport },
-          { text: 'OK', style: 'default' }
+          { text: 'OK', style: 'default' },
         ]
       );
     } catch (err: any) {
@@ -199,8 +199,8 @@ export const ImportScreen: React.FC = () => {
               className={`w-8 h-8 rounded-full items-center justify-center ${step.completed
                 ? 'bg-green-500'
                 : currentStep === step.step
-                  ? `bg-[${colors.primary}]`
-                  : `bg-[${colors.neutral}]`
+                ? `bg-[${colors.primary}]`
+                : `bg-[${colors.neutral}]`
                 }`}
             >
               {step.completed ? (
@@ -270,7 +270,7 @@ export const ImportScreen: React.FC = () => {
         </Text>
 
         <Text className="text-sm mb-4" style={{ color: colors.textLight }}>
-          Associez chaque colonne de votre fichier avec les champs correspondants:
+          Associez chaque colonne de votre fichier avec les champs correspondants. Les champs marqués comme obligatoires (*) doivent être mappés. Le champ 'Nom du Fournisseur' est optionnel mais recommandé pour associer un fournisseur au stock.
         </Text>
 
         {headers.map((header, index) => {
@@ -316,8 +316,7 @@ export const ImportScreen: React.FC = () => {
 
         <View className="mt-4 p-3 rounded-lg" style={{ backgroundColor: `${colors.info}10` }}>
           <Text className="text-sm" style={{ color: colors.info }}>
-            💡 Conseil: Les mappings automatiques ont été appliqués basés sur les noms de colonnes.
-            Vérifiez et ajustez si nécessaire.
+            💡 Conseil: Les mappings automatiques ont été appliqués basés sur les noms de colonnes. Assurez-vous de mapper 'Nom du Fournisseur' si votre fichier inclut des informations sur les fournisseurs.
           </Text>
         </View>
 
@@ -389,7 +388,7 @@ export const ImportScreen: React.FC = () => {
               <Text className="font-medium" style={{ color: colors.warning }}>
                 ⚠️ Avertissements:
               </Text>
-              {importResult.errors.map((error: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined, index: React.Key | null | undefined) => (
+              {importResult.errors.map((error, index) => (
                 <Text key={index} className="text-sm" style={{ color: colors.warning }}>
                   • {error}
                 </Text>

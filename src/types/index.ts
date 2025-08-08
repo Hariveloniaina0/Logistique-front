@@ -11,12 +11,10 @@ export interface Supplier {
   supplierName: string;
 }
 
-export interface Warehouse {
-  idWarehouse: number;
-  warehouseName: string;
-}
 
-export interface Store {
-  idStore: number;
-  storeName: string;
+
+export interface LabelExportData {
+  barcode: string;
+  labelQuantity: number;
+  format?: 'csv' | 'excel';
 }

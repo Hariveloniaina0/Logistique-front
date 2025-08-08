@@ -13,6 +13,7 @@ import { SupplierListScreen } from '../screens/main/SupplierListScreen';
 import { WarehouseListScreen } from '../screens/main/WarehouseListScreen';
 import { WorkZoneScreen } from '../screens/main/WorkZoneScreen';
 import { StockScreen } from '../screens/main/StockScreen';
+import { LabelScreen } from '~/screens/main/LabelScreen';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -69,7 +70,7 @@ export const MainNavigator: React.FC = () => {
       />
       <Stack.Screen
         name="Etiquette"
-        component={PlaceholderScreen}
+        component={LabelScreen}
         options={{ title: 'Étiquettes' }}
       />
       <Stack.Screen

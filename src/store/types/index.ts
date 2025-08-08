@@ -1,7 +1,9 @@
 // src/store/types/index.ts
 import { ProductState } from '~/types/product.types';
-import { AuthState, Store, Supplier, Warehouse } from '../../types';
+import { AuthState, Supplier } from '../../types';
 import { FtpState } from '~/types/ftp.types';
+import { Warehouse } from '~/types/warehouse.types';
+import { Store } from '~/types/store.types';
 
 export interface SupplierState {
   suppliers: Supplier[];
